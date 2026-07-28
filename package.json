@@ -10,74 +10,15 @@
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
-    "dist": "npm run package && electron-builder",
-    "dist:win": "npm run package && electron-builder --win",
-    "dist:portable": "npm run package && electron-builder --win portable",    
     "lint": "eslint --ext .ts,.tsx .",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [],
   "author": {
     "name": "Isaac Mayowa OJO",
-    "email": "mayorjo4ever@gmail.com",
-    "phone": "07030577951"
+    "email": "mayorjo4ever@gmail.com"
   },
   "license": "MIT",
-  "build": {
-    "appId": "com.obh.presenter",
-    "productName": "Only Believe",
-    "copyright": "Copyright © 2026 Isaac Mayowa OJO",
-    "directories": {
-      "output": "release"
-    },
-    "files": [
-      ".vite/**/*",
-      "assets/**/*",
-      "package.json"
-    ],
-    "extraResources": [
-      {
-        "from": "assets",
-        "to": "assets"
-      }
-    ],
-    "asar": true,
-    "win": {
-      "target": [
-        {
-          "target": "zip",
-          "arch": [
-            "x64"
-          ]
-        },
-        {
-          "target": "portable",
-          "arch": [
-            "x64"
-          ]
-        },
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        }
-      ],
-      "icon": "assets/icon.ico"
-    },
-    "portable": {
-      "artifactName": "OnlyBelieve-Portable.exe"
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowElevation": true,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "shortcutName": "Only Believe",
-      "artifactName": "OnlyBelieve-Setup.exe"
-    }
-  },
   "devDependencies": {
     "@electron-forge/cli": "^7.11.2",
     "@electron-forge/maker-deb": "^7.11.2",
@@ -89,13 +30,14 @@
     "@electron-forge/plugin-vite": "^7.11.2",
     "@electron/fuses": "^1.8.0",
     "@types/electron-squirrel-startup": "^1.0.2",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "@types/ws": "^8.18.1",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
     "@vitejs/plugin-react": "^4.3.4",
     "electron": "^43.1.0",
-    "electron-builder": "^26.15.3",
     "eslint": "^8.57.1",
     "eslint-plugin-import": "^2.32.0",
     "typescript": "^7.0.2",
@@ -104,9 +46,11 @@
   "dependencies": {
     "electron-squirrel-startup": "^1.0.1",
     "framer-motion": "^12.42.2",
+    "qrcode": "^1.5.4",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-icons": "^5.7.0",
+    "ws": "^8.21.1",
     "zustand": "^5.0.14"
   }
 }

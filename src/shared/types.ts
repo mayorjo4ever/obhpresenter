@@ -98,6 +98,12 @@ export const IPC = {
   BACKGROUND_LOAD: "background:load",
   BACKGROUND_UPDATE: "background:update",
   BACKGROUND_REQUEST: "background:request",
+  SCREEN_LIST: "screen:list",
+  SCREEN_USE: "screen:use",
+  SCREEN_CHANGED: "screen:changed",
+  WIRELESS_START: "wireless:start",
+  WIRELESS_STOP: "wireless:stop",
+  WIRELESS_STATUS: "wireless:status",
 } as const;
 
 export interface ImportedFile {
@@ -115,6 +121,24 @@ export interface BackgroundImageMeta {
 export interface BackgroundGalleryState {
   images: BackgroundImageMeta[];
   activePath: string | null;
+}
+
+export interface DisplayInfo {
+  id: number;
+  label: string;
+  width: number;
+  height: number;
+  /** true for the primary/built-in display (usually the laptop's own screen) */
+  isPrimary: boolean;
+  /** the display currently selected as the projector target */
+  isSelected: boolean;
+}
+
+export interface WirelessStatus {
+  running: boolean;
+  url: string | null;
+  qrDataUrl: string | null;
+  error?: string;
 }
 
 export interface ObhBridge {
@@ -152,6 +176,20 @@ export interface ObhBridge {
   sendBackground: (dataUrl: string | null) => void;
   onBackground: (cb: (dataUrl: string | null) => void) => () => void;
   requestBackground: () => void;
+
+  /** Connected displays — a wireless HDMI/Miracast dongle shows up here
+   * exactly like a wired monitor, since Windows/macOS treat it as a
+   * regular extended display. */
+  listDisplays: () => Promise<DisplayInfo[]>;
+  useDisplay: (id: number) => Promise<DisplayInfo[]>;
+  onDisplaysChanged: (cb: (displays: DisplayInfo[]) => void) => () => void;
+
+  /** Network projection — no dongle required. Serves the projector view
+   * over the local WiFi network so any device with a browser (smart TV,
+   * phone, tablet) can open a URL and see the live feed. */
+  startWirelessDisplay: () => Promise<WirelessStatus>;
+  stopWirelessDisplay: () => Promise<WirelessStatus>;
+  getWirelessStatus: () => Promise<WirelessStatus>;
 }
 
 declare global {

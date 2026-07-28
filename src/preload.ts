@@ -1,11 +1,13 @@
 import { contextBridge, ipcRenderer } from "electron";
 import {
   BackgroundGalleryState,
+  DisplayInfo,
   Hymn,
   IPC,
   ImportedFile,
   ObhBridge,
   ProjectorState,
+  WirelessStatus,
 } from "./shared/types";
 
 const bridge: ObhBridge = {
@@ -55,6 +57,22 @@ const bridge: ObhBridge = {
   requestBackground: () => {
     ipcRenderer.send(IPC.BACKGROUND_REQUEST);
   },
+
+  listDisplays: (): Promise<DisplayInfo[]> => ipcRenderer.invoke(IPC.SCREEN_LIST),
+  useDisplay: (id: number): Promise<DisplayInfo[]> =>
+    ipcRenderer.invoke(IPC.SCREEN_USE, id),
+  onDisplaysChanged: (cb: (displays: DisplayInfo[]) => void) => {
+    const listener = (_event: unknown, displays: DisplayInfo[]) => cb(displays);
+    ipcRenderer.on(IPC.SCREEN_CHANGED, listener);
+    return () => ipcRenderer.removeListener(IPC.SCREEN_CHANGED, listener);
+  },
+
+  startWirelessDisplay: (): Promise<WirelessStatus> =>
+    ipcRenderer.invoke(IPC.WIRELESS_START),
+  stopWirelessDisplay: (): Promise<WirelessStatus> =>
+    ipcRenderer.invoke(IPC.WIRELESS_STOP),
+  getWirelessStatus: (): Promise<WirelessStatus> =>
+    ipcRenderer.invoke(IPC.WIRELESS_STATUS),
 };
 
 contextBridge.exposeInMainWorld("obh", bridge);

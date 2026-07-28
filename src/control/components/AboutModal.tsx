@@ -17,16 +17,16 @@ export default function AboutModal({ onClose }: Props) {
         <div className="about-divider" />
 
         <p className="about-developer">Developed by {pkg.author.name}</p>
-        <a className="about-contact" href={`mailto:${pkg.author.email}`}>          
+        <a className="about-contact" href={`mailto:${pkg.author.email}`}>
           {pkg.author.email}
         </a>
-        <a className="about-contact" href={`tel:${pkg.author.phone}`}>          
-          {pkg.author.phone}
+        <a className="about-contact" href="tel:07030577951">
+          0703 057 7951
         </a>
-
+        <p className="about-address">Ilorin Christian Assembly, Kwara State</p>
         <p className="about-consult">
           For consultation, custom features, or building a similar app for your
-          organization, reach out using the email above.
+          organization, reach out using the details above.
         </p>
 
         <div className="modal-actions about-actions">

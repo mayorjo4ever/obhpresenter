@@ -9,6 +9,7 @@ import AddSongModal from "./components/AddSongModal";
 import BiblePanel from "./components/BiblePanel";
 import BackgroundModal from "./components/BackgroundModal";
 import AboutModal from "./components/AboutModal";
+import DisplayModal from "./components/DisplayModal";
 import VoiceCommandButton from "./components/VoiceCommandButton";
 import hymnsData from "../data/hymns.json";
 import iconUrl from "../../assets/icon.png";
@@ -27,6 +28,7 @@ export default function ControlApp() {
   const [showAddSong, setShowAddSong] = useState(false);
   const [showBackground, setShowBackground] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
+  const [showDisplays, setShowDisplays] = useState(false);
   const [activeTab, setActiveTab] = useState<SidebarTab>("hymns");
   const loadHymn = usePresentationStore((s) => s.loadHymn);
   const loadItem = usePresentationStore((s) => s.loadItem);
@@ -145,6 +147,9 @@ export default function ControlApp() {
           <button className="btn" onClick={() => setShowBackground(true)}>
             Background
           </button>
+          <button className="btn" onClick={() => setShowDisplays(true)}>
+            Displays
+          </button>
           <button className="btn" onClick={() => setShowAbout(true)}>
             About
           </button>
@@ -208,6 +213,8 @@ export default function ControlApp() {
       )}
 
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
+
+      {showDisplays && <DisplayModal onClose={() => setShowDisplays(false)} />}
     </div>
   );
 }

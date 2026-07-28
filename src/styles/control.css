@@ -768,6 +768,12 @@ button, input, select, textarea {
   text-decoration: underline;
 }
 
+.about-address {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
 .about-consult {
   margin: 6px 0 0;
   color: var(--text-dim);
@@ -778,6 +784,89 @@ button, input, select, textarea {
 .about-actions {
   justify-content: center;
   width: 100%;
+}
+
+/* Displays & wireless */
+.display-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.display-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--navy-800);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.display-row.active {
+  border-color: var(--gold);
+}
+
+.display-row-label {
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.display-row-tag {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gold);
+  border: 1px solid var(--gold);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.display-row-size {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.modal-divider-full {
+  height: 1px;
+  background: var(--border);
+  margin: 6px 0;
+}
+
+.modal-subheading {
+  margin: 0;
+  font-size: 15px;
+  color: var(--gold-bright);
+  font-family: Georgia, "Iowan Old Style", "Times New Roman", serif;
+}
+
+.wireless-active {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--navy-800);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.wireless-qr {
+  width: 84px;
+  height: 84px;
+  border-radius: 6px;
+  background: white;
+  padding: 4px;
+}
+
+.wireless-url {
+  font-size: 14px;
+  color: var(--gold-bright);
+  word-break: break-all;
 }
 
 /* Voice command */

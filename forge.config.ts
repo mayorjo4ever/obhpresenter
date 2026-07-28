@@ -1,9 +1,9 @@
 import type { ForgeConfig } from "@electron-forge/shared-types";
 import path from "node:path";
-//import { MakerSquirrel } from "@electron-forge/maker-squirrel";
+import { MakerSquirrel } from "@electron-forge/maker-squirrel";
 import { MakerZIP } from "@electron-forge/maker-zip";
-//import { MakerRpm } from "@electron-forge/maker-rpm";
-//import { MakerDeb } from "@electron-forge/maker-deb";
+import { MakerRpm } from "@electron-forge/maker-rpm";
+import { MakerDeb } from "@electron-forge/maker-deb";
 import { VitePlugin } from "@electron-forge/plugin-vite";
 import { FusesPlugin } from "@electron-forge/plugin-fuses";
 import { FuseV1Options, FuseVersion } from "@electron/fuses";
@@ -20,14 +20,11 @@ const config: ForgeConfig = {
     extraResource: [path.resolve(__dirname, "assets")],
   },
   rebuildConfig: {},
-  // makers: [
-  //   new MakerSquirrel({}),
-  //   new MakerZIP({}, ["darwin", "linux", "win32"]),
-  //   new MakerRpm({}),
-  //   new MakerDeb({}),
-  // ],
   makers: [
-    new MakerZIP({}, ["win32"]),
+    new MakerSquirrel({}),
+    new MakerZIP({}, ["darwin", "linux", "win32"]),
+    new MakerRpm({}),
+    new MakerDeb({}),
   ],
   plugins: [
     new VitePlugin({

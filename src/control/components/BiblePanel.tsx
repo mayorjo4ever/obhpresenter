@@ -28,6 +28,9 @@ export default function BiblePanel() {
 
   const [textQuery, setTextQuery] = useState("");
   const [searchResults, setSearchResults] = useState<BibleVerse[]>([]);
+  const [searchStatus, setSearchStatus] = useState<
+    "idle" | "searching" | "done"
+  >("idle");
 
   const displayMode = usePresentationStore((s) => s.displayMode);
   const splitLongVerses = usePresentationStore((s) => s.splitLongVerses);
@@ -121,12 +124,16 @@ export default function BiblePanel() {
     const q = textQuery.trim();
     if (q.length < 3) {
       setSearchResults([]);
+      setSearchStatus("idle");
       return;
     }
+    setSearchStatus("searching");
     let cancelled = false;
     const timer = setTimeout(() => {
       searchVerses(q, 30).then((results) => {
-        if (!cancelled) setSearchResults(results);
+        if (cancelled) return;
+        setSearchResults(results);
+        setSearchStatus("done");
       });
     }, 200);
     return () => {
@@ -208,6 +215,14 @@ export default function BiblePanel() {
         />
       </label>
 
+      {searchStatus === "searching" && (
+        <p className="bible-ref-status">Searching…</p>
+      )}
+      {searchStatus === "done" && searchResults.length === 0 && (
+        <p className="modal-error">
+          No verses found for &quot;{textQuery.trim()}&quot;
+        </p>
+      )}
       {searchResults.length > 0 && (
         <div className="bible-search-results">
           {searchResults.map((v) => (
