@@ -4,6 +4,7 @@ import {
   DisplayMode,
   Hymn,
   HymnBlock,
+  MediaItem,
   PresentationItem,
   Slide,
   SlideKind,
@@ -210,6 +211,27 @@ export function buildBibleItem(
   });
 
   return { id: nextId("item"), type: "bible", title, slides: lineSlides };
+}
+
+export function buildMediaItem(media: MediaItem, loop = true): PresentationItem {
+  // A single synthetic slide so the existing cursor/prev-next/live-preview
+  // machinery works unchanged — a media item is just an item that always
+  // has exactly one "slide" (the image or video itself).
+  return {
+    id: nextId("item"),
+    type: "media",
+    title: media.name,
+    slides: [
+      {
+        id: nextId("slide"),
+        kind: "blank",
+        lines: [],
+        label: media.name,
+        index: 0,
+      },
+    ],
+    media: { id: media.id, kind: media.kind, loop: media.kind === "video" ? loop : false },
+  };
 }
 
 /**

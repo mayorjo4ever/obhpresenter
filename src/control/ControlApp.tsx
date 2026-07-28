@@ -7,6 +7,7 @@ import LivePreview from "./components/LivePreview";
 import FooterToolbar from "./components/FooterToolbar";
 import AddSongModal from "./components/AddSongModal";
 import BiblePanel from "./components/BiblePanel";
+import MediaPanel from "./components/MediaPanel";
 import BackgroundModal from "./components/BackgroundModal";
 import AboutModal from "./components/AboutModal";
 import DisplayModal from "./components/DisplayModal";
@@ -20,7 +21,7 @@ const libraryHymns: Hymn[] = (hymnsData as { hymns: Hymn[] }).hymns.map((h) => (
   source: "library" as const,
 }));
 
-type SidebarTab = "hymns" | "bible";
+type SidebarTab = "hymns" | "bible" | "media";
 
 export default function ControlApp() {
   const [projectorOpen, setProjectorOpen] = useState(false);
@@ -174,6 +175,12 @@ export default function ControlApp() {
             >
               Bible
             </button>
+            <button
+              className={activeTab === "media" ? "tab active" : "tab"}
+              onClick={() => setActiveTab("media")}
+            >
+              Media
+            </button>
           </div>
 
           {activeTab === "hymns" ? (
@@ -192,8 +199,10 @@ export default function ControlApp() {
                 onDelete={handleDeleteSong}
               />
             </>
-          ) : (
+          ) : activeTab === "bible" ? (
             <BiblePanel />
+          ) : (
+            <MediaPanel />
           )}
         </aside>
 

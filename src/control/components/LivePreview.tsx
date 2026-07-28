@@ -17,6 +17,27 @@ export default function LivePreview({ item }: Props) {
     );
   }
 
+  if (item.type === "media" && item.media) {
+    return (
+      <div className="live-preview">
+        <h2 className="live-preview-title">{item.title}</h2>
+        <div className="media-preview-stage">
+          {item.media.kind === "image" ? (
+            <img src={`obh-media://${item.media.id}`} alt="" />
+          ) : (
+            <video
+              src={`obh-media://${item.media.id}`}
+              muted
+              loop={item.media.loop}
+              autoPlay
+              playsInline
+            />
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="live-preview">
       <h2 className="live-preview-title">{item.title}</h2>

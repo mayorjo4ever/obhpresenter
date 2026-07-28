@@ -1,6 +1,6 @@
 import { create } from "zustand";
-import { DisplayMode, Hymn, PresentationItem, ProjectorState } from "../shared/types";
-import { buildHymnItem, PresentationCursor } from "../engine/presentationEngine";
+import { DisplayMode, Hymn, MediaItem, PresentationItem, ProjectorState } from "../shared/types";
+import { buildHymnItem, buildMediaItem, PresentationCursor } from "../engine/presentationEngine";
 
 interface PresentationState {
   displayMode: DisplayMode;
@@ -19,6 +19,7 @@ interface PresentationState {
 
   setDisplayMode: (mode: DisplayMode) => void;
   loadHymn: (hymn: Hymn) => void;
+  loadMedia: (media: MediaItem, loop?: boolean) => void;
   loadItem: (item: PresentationItem) => void;
   next: () => void;
   previous: () => void;
@@ -64,6 +65,10 @@ export const usePresentationStore = create<PresentationState>((set, get) => ({
   loadHymn: (hymn) => {
     const item = buildHymnItem(hymn, get().displayMode, get().splitLongVerses);
     get().loadItem(item);
+  },
+
+  loadMedia: (media, loop = true) => {
+    get().loadItem(buildMediaItem(media, loop));
   },
 
   loadItem: (item) => {

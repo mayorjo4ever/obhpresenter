@@ -5,6 +5,7 @@ import {
   Hymn,
   IPC,
   ImportedFile,
+  MediaLibraryState,
   ObhBridge,
   ProjectorState,
   WirelessStatus,
@@ -73,6 +74,11 @@ const bridge: ObhBridge = {
     ipcRenderer.invoke(IPC.WIRELESS_STOP),
   getWirelessStatus: (): Promise<WirelessStatus> =>
     ipcRenderer.invoke(IPC.WIRELESS_STATUS),
+
+  listMedia: (): Promise<MediaLibraryState> => ipcRenderer.invoke(IPC.MEDIA_LIST),
+  addMedia: (): Promise<MediaLibraryState> => ipcRenderer.invoke(IPC.MEDIA_ADD),
+  removeMedia: (id: string): Promise<MediaLibraryState> =>
+    ipcRenderer.invoke(IPC.MEDIA_REMOVE, id),
 };
 
 contextBridge.exposeInMainWorld("obh", bridge);

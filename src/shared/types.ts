@@ -55,9 +55,32 @@ export type DisplayMode = "verse" | "line";
 
 export interface PresentationItem {
   id: string;
-  type: "hymn" | "bible";
+  type: "hymn" | "bible" | "media";
   title: string;
   slides: Slide[];
+  /** Only present when type === "media" — the hymn/bible slide machinery
+   * (cursor, prev/next, live preview thumbnails) still works unchanged
+   * because a media item always carries exactly one synthetic slide. */
+  media?: MediaRef;
+}
+
+export interface MediaRef {
+  id: string;
+  kind: "image" | "video";
+  loop: boolean;
+}
+
+// ---------- Media library (images/videos for full-screen projection) ----------
+
+export interface MediaItem {
+  id: string;
+  name: string;
+  filePath: string;
+  kind: "image" | "video";
+}
+
+export interface MediaLibraryState {
+  items: MediaItem[];
 }
 
 /** What the control window broadcasts and the projector mirrors */
@@ -104,6 +127,9 @@ export const IPC = {
   WIRELESS_START: "wireless:start",
   WIRELESS_STOP: "wireless:stop",
   WIRELESS_STATUS: "wireless:status",
+  MEDIA_LIST: "media:list",
+  MEDIA_ADD: "media:add",
+  MEDIA_REMOVE: "media:remove",
 } as const;
 
 export interface ImportedFile {
@@ -190,6 +216,15 @@ export interface ObhBridge {
   startWirelessDisplay: () => Promise<WirelessStatus>;
   stopWirelessDisplay: () => Promise<WirelessStatus>;
   getWirelessStatus: () => Promise<WirelessStatus>;
+
+  /** Media library — images/videos the operator has added, each
+   * projectable full-screen in place of a hymn/Bible slide. The actual
+   * file bytes are streamed on demand (via a custom obh-media:// protocol
+   * locally, or a /media/ route on the wireless server for remote
+   * viewers) rather than loaded into memory here — videos can be large. */
+  listMedia: () => Promise<MediaLibraryState>;
+  addMedia: () => Promise<MediaLibraryState>;
+  removeMedia: (id: string) => Promise<MediaLibraryState>;
 }
 
 declare global {

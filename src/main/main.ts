@@ -4,13 +4,17 @@ import {
   dialog,
   ipcMain,
   nativeImage,
+  net,
+  protocol,
   screen,
   session,
 } from "electron";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import http from "node:http";
 import os from "node:os";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { WebSocket, WebSocketServer } from "ws";
 import QRCode from "qrcode";
 import started from "electron-squirrel-startup";
@@ -20,6 +24,8 @@ import {
   EMPTY_PROJECTOR_STATE,
   Hymn,
   IPC,
+  MediaItem,
+  MediaLibraryState,
   ProjectorState,
   WirelessStatus,
 } from "../shared/types";
@@ -27,6 +33,32 @@ import {
 if (started) {
   app.quit();
 }
+
+// Custom scheme for streaming locally-added media (images/videos) into the
+// projector window. Registered "standard" + "stream" so large video files
+// are read off disk on demand rather than loaded fully into memory, and
+// "corsEnabled" so it can be fetched from any origin — including the Vite
+// dev server's http://localhost origin during `npm start`. Must be called
+// before the app is ready.
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: "obh-media",
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: true,
+      stream: true,
+    },
+  },
+]);
+
+// Video/image projection plays in the projector window, not the window the
+// operator actually clicked "Go Live" in — Chromium's default autoplay
+// policy requires a user gesture in the SAME page, which the projector
+// window never gets. This is a standard, safe switch for a fully
+// first-party kiosk-style app like this one.
+app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
 declare const MAIN_WINDOW_VITE_NAME: string;
@@ -267,6 +299,86 @@ ipcMain.handle(IPC.SONGS_IMPORT_FILE, async () => {
   return { filename: path.basename(filePath), content };
 });
 
+// ---------- Media library (images/videos for full-screen projection) ----------
+// Only the file path + a little metadata is persisted — never the file
+// itself — since videos can be large and the operator's own files aren't
+// going anywhere. Playback reads straight from disk on demand (see the
+// obh-media:// protocol handler below, and the wireless server's /media/
+// route), so nothing here is ever loaded fully into memory.
+
+const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "webp", "gif", "bmp"];
+const VIDEO_EXTENSIONS = ["mp4", "webm", "mov", "mkv", "avi", "m4v"];
+
+function inferMediaKind(filePath: string): "image" | "video" | null {
+  const ext = path.extname(filePath).slice(1).toLowerCase();
+  if (IMAGE_EXTENSIONS.includes(ext)) return "image";
+  if (VIDEO_EXTENSIONS.includes(ext)) return "video";
+  return null;
+}
+
+function mediaLibraryPath(): string {
+  return path.join(app.getPath("userData"), "media-library.json");
+}
+
+function readMediaLibrary(): MediaItem[] {
+  try {
+    const raw = fs.readFileSync(mediaLibraryPath(), "utf-8");
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as MediaItem[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeMediaLibrary(items: MediaItem[]): void {
+  fs.writeFileSync(mediaLibraryPath(), JSON.stringify(items, null, 2), "utf-8");
+}
+
+function mediaLibraryState(): MediaLibraryState {
+  // Files can be moved/deleted outside the app between sessions — quietly
+  // drop entries that no longer resolve rather than showing broken tiles.
+  const items = readMediaLibrary().filter((m) => fs.existsSync(m.filePath));
+  return { items };
+}
+
+ipcMain.handle(IPC.MEDIA_LIST, () => mediaLibraryState());
+
+ipcMain.handle(IPC.MEDIA_ADD, async () => {
+  const result = await dialog.showOpenDialog({
+    properties: ["openFile", "multiSelections"],
+    filters: [
+      { name: "Images & Videos", extensions: [...IMAGE_EXTENSIONS, ...VIDEO_EXTENSIONS] },
+      { name: "Images", extensions: IMAGE_EXTENSIONS },
+      { name: "Videos", extensions: VIDEO_EXTENSIONS },
+    ],
+  });
+  if (!result.canceled && result.filePaths.length > 0) {
+    const existing = readMediaLibrary();
+    const existingPaths = new Set(existing.map((m) => m.filePath));
+    const added: MediaItem[] = result.filePaths
+      .filter((p) => !existingPaths.has(p))
+      .flatMap((filePath) => {
+        const kind = inferMediaKind(filePath);
+        if (!kind) return [];
+        return [
+          {
+            id: crypto.randomUUID(),
+            name: path.basename(filePath, path.extname(filePath)),
+            filePath,
+            kind,
+          },
+        ];
+      });
+    writeMediaLibrary([...existing, ...added]);
+  }
+  return mediaLibraryState();
+});
+
+ipcMain.handle(IPC.MEDIA_REMOVE, (_event, id: string) => {
+  writeMediaLibrary(readMediaLibrary().filter((m) => m.id !== id));
+  return mediaLibraryState();
+});
+
 // ---------- Background image gallery ----------
 // Thumbnails are generated on demand via Electron's built-in nativeImage
 // resizer so the gallery listing stays light; the full-resolution image is
@@ -429,6 +541,15 @@ function mimeType(filePath: string): string {
     ".ico": "image/x-icon",
     ".woff": "font/woff",
     ".woff2": "font/woff2",
+    ".webp": "image/webp",
+    ".gif": "image/gif",
+    ".bmp": "image/bmp",
+    ".mp4": "video/mp4",
+    ".webm": "video/webm",
+    ".mov": "video/quicktime",
+    ".mkv": "video/x-matroska",
+    ".avi": "video/x-msvideo",
+    ".m4v": "video/x-m4v",
   };
   return map[ext] ?? "application/octet-stream";
 }
@@ -436,11 +557,49 @@ function mimeType(filePath: string): string {
 function getLanAddress(): string | null {
   const nets = os.networkInterfaces();
   for (const name of Object.keys(nets)) {
-    for (const net of nets[name] ?? []) {
-      if (net.family === "IPv4" && !net.internal) return net.address;
+    for (const iface of nets[name] ?? []) {
+      if (iface.family === "IPv4" && !iface.internal) return iface.address;
     }
   }
   return null;
+}
+
+/** Streams a local media file to a wireless (remote browser) client, with
+ * HTTP Range support so video seeking/scrubbing works smoothly instead of
+ * forcing a full re-download from byte 0 on every seek. */
+function serveMediaFile(
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+  filePath: string
+): void {
+  fs.stat(filePath, (err, stats) => {
+    if (err) {
+      res.writeHead(404);
+      res.end("Not found");
+      return;
+    }
+    const contentType = mimeType(filePath);
+    const range = req.headers.range;
+    if (range) {
+      const match = /bytes=(\d+)-(\d*)/.exec(range);
+      const start = match ? parseInt(match[1], 10) : 0;
+      const end = match && match[2] ? parseInt(match[2], 10) : stats.size - 1;
+      res.writeHead(206, {
+        "Content-Range": `bytes ${start}-${end}/${stats.size}`,
+        "Accept-Ranges": "bytes",
+        "Content-Length": end - start + 1,
+        "Content-Type": contentType,
+      });
+      fs.createReadStream(filePath, { start, end }).pipe(res);
+    } else {
+      res.writeHead(200, {
+        "Content-Length": stats.size,
+        "Content-Type": contentType,
+        "Accept-Ranges": "bytes",
+      });
+      fs.createReadStream(filePath).pipe(res);
+    }
+  });
 }
 
 async function startWirelessServer(): Promise<WirelessStatus> {
@@ -475,6 +634,22 @@ async function startWirelessServer(): Promise<WirelessStatus> {
     const server = http.createServer((req, res) => {
       let reqPath = (req.url ?? "/").split("?")[0];
       if (reqPath === "/") reqPath = "/projector.html";
+
+      // Media files (images/videos the operator added) live wherever the
+      // operator's own files are on disk — never part of the Vite bundle
+      // or dist dir — so this is handled before the dev-proxy/static-file
+      // branches below, in both dev and packaged modes alike.
+      if (reqPath.startsWith("/media/")) {
+        const id = decodeURIComponent(reqPath.slice("/media/".length));
+        const item = readMediaLibrary().find((m) => m.id === id);
+        if (!item) {
+          res.writeHead(404);
+          res.end("Not found");
+          return;
+        }
+        serveMediaFile(req, res, item.filePath);
+        return;
+      }
 
       if (devServerUrl) {
         // Dev mode: our server is the only thing reachable on the LAN
@@ -562,6 +737,23 @@ ipcMain.handle(IPC.WIRELESS_STATUS, () => wirelessStatus);
 // ---------- App lifecycle ----------
 
 app.whenReady().then(() => {
+  // Serves an operator-added image/video straight from disk into the local
+  // Electron windows (control preview + projector) by id, e.g.
+  // obh-media://<id>. net.fetch() on a file:// URL streams the response —
+  // it forwards Range headers too, so video seeking works — rather than
+  // reading the whole file into memory up front.
+  protocol.handle("obh-media", async (request) => {
+    const id = new URL(request.url).hostname;
+    const item = readMediaLibrary().find((m) => m.id === id);
+    if (!item) return new Response("Not found", { status: 404 });
+    try {
+      const fileUrl = pathToFileURL(item.filePath).toString();
+      return net.fetch(fileUrl, { headers: request.headers });
+    } catch {
+      return new Response("Not found", { status: 404 });
+    }
+  });
+
   // The control window's voice-command feature needs microphone access.
   // This app has no third-party web content, so auto-granting media
   // permission for its own windows is safe (there's nothing untrusted
