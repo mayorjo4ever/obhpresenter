@@ -73,6 +73,8 @@ let projectorWindow: BrowserWindow | null = null;
  * never shows garbage. */
 let lastState: ProjectorState = EMPTY_PROJECTOR_STATE;
 let lastBackground: string | null = null;
+let lastFont: string = "Georgia";
+let lastFontColor: string = "#ffffff";
 
 /**
  * Resolves the app icon at runtime. Before packaging (dev/`start`), main.ts
@@ -93,6 +95,8 @@ interface AppSettings {
   gallery: string[];
   activePath: string | null;
   selectedDisplayId: number | null;
+  fontFamily: string;
+  fontColor: string;
 }
 
 function settingsPath(): string {
@@ -107,9 +111,17 @@ function readSettings(): AppSettings {
       gallery: Array.isArray(parsed.gallery) ? parsed.gallery : [],
       activePath: parsed.activePath ?? null,
       selectedDisplayId: parsed.selectedDisplayId ?? null,
+      fontFamily: typeof parsed.fontFamily === "string" ? parsed.fontFamily : "Georgia",
+      fontColor: typeof parsed.fontColor === "string" ? parsed.fontColor : "#ffffff",
     };
   } catch {
-    return { gallery: [], activePath: null, selectedDisplayId: null };
+    return {
+      gallery: [],
+      activePath: null,
+      selectedDisplayId: null,
+      fontFamily: "Georgia",
+      fontColor: "#ffffff",
+    };
   }
 }
 
@@ -244,6 +256,36 @@ ipcMain.on(IPC.BACKGROUND_UPDATE, (_event, dataUrl: string | null) => {
 
 ipcMain.on(IPC.BACKGROUND_REQUEST, (event) => {
   event.sender.send(IPC.BACKGROUND_UPDATE, lastBackground);
+});
+
+ipcMain.handle(IPC.FONT_LOAD, () => readSettings().fontFamily);
+
+ipcMain.on(IPC.FONT_UPDATE, (_event, font: string) => {
+  lastFont = font;
+  writeSettings({ ...readSettings(), fontFamily: font });
+  if (projectorWindow && !projectorWindow.isDestroyed()) {
+    projectorWindow.webContents.send(IPC.FONT_UPDATE, font);
+  }
+  broadcastToWireless({ type: "font", payload: font });
+});
+
+ipcMain.on(IPC.FONT_REQUEST, (event) => {
+  event.sender.send(IPC.FONT_UPDATE, lastFont);
+});
+
+ipcMain.handle(IPC.FONT_COLOR_LOAD, () => readSettings().fontColor);
+
+ipcMain.on(IPC.FONT_COLOR_UPDATE, (_event, color: string) => {
+  lastFontColor = color;
+  writeSettings({ ...readSettings(), fontColor: color });
+  if (projectorWindow && !projectorWindow.isDestroyed()) {
+    projectorWindow.webContents.send(IPC.FONT_COLOR_UPDATE, color);
+  }
+  broadcastToWireless({ type: "font-color", payload: color });
+});
+
+ipcMain.on(IPC.FONT_COLOR_REQUEST, (event) => {
+  event.sender.send(IPC.FONT_COLOR_UPDATE, lastFontColor);
 });
 
 // ---------- Custom songs ("special songs" outside the shipped hymnal) ----------
@@ -694,6 +736,8 @@ async function startWirelessServer(): Promise<WirelessStatus> {
       wsClients.add(ws);
       ws.send(JSON.stringify({ type: "state", payload: lastState }));
       ws.send(JSON.stringify({ type: "background", payload: lastBackground }));
+      ws.send(JSON.stringify({ type: "font", payload: lastFont }));
+      ws.send(JSON.stringify({ type: "font-color", payload: lastFontColor }));
       ws.on("close", () => wsClients.delete(ws));
     });
 
@@ -737,6 +781,9 @@ ipcMain.handle(IPC.WIRELESS_STATUS, () => wirelessStatus);
 // ---------- App lifecycle ----------
 
 app.whenReady().then(() => {
+  lastFont = readSettings().fontFamily;
+  lastFontColor = readSettings().fontColor;
+
   // Serves an operator-added image/video straight from disk into the local
   // Electron windows (control preview + projector) by id, e.g.
   // obh-media://<id>. net.fetch() on a file:// URL streams the response —

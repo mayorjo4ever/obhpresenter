@@ -17,7 +17,8 @@ export default function ProjectorApp() {
     initProjectorBridge();
   }, []);
 
-  const { item, currentSlideIndex, isBlank, isLive, background } = useProjectorStore();
+  const { item, currentSlideIndex, isBlank, isLive, background, fontFamily, fontColor } =
+    useProjectorStore();
   const slide = item?.slides[currentSlideIndex] ?? null;
 
   if (isBlank || !isLive || !slide) {
@@ -56,7 +57,7 @@ export default function ProjectorApp() {
   return (
     <div className="projector-stage" style={stageStyle}>
       {item && <div className="projector-heading">{item.title}</div>}
-      <FitText lines={slide.lines} />
+      <FitText lines={slide.lines} fontFamily={fontFamily} color={fontColor} />
       <div className="projector-label">{slide.label}</div>
     </div>
   );

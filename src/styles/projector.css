@@ -57,8 +57,11 @@ html, body, #root {
 }
 
 .projector-line {
-  color: #ffffff;
-  font-family: "Georgia", "Times New Roman", serif;
+  /* color and font-family intentionally omitted here — they're set as an
+   * inline style on the parent .projector-fit-content div (driven by the
+   * operator's font/color picker) and inherit down to these <p> elements.
+   * An explicit rule here would always win over that inherited value,
+   * silently ignoring whatever the operator picked. */
   line-height: 1.35;
   margin: 0 0 0.3em;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);

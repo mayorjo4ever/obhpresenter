@@ -3,8 +3,12 @@ import { EMPTY_PROJECTOR_STATE, ProjectorState } from "../shared/types";
 
 interface ProjectorStoreState extends ProjectorState {
   background: string | null;
+  fontFamily: string;
+  fontColor: string;
   setState: (state: ProjectorState) => void;
   setBackground: (dataUrl: string | null) => void;
+  setFontFamily: (font: string) => void;
+  setFontColor: (color: string) => void;
 }
 
 /**
@@ -16,8 +20,12 @@ interface ProjectorStoreState extends ProjectorState {
 export const useProjectorStore = create<ProjectorStoreState>((set) => ({
   ...EMPTY_PROJECTOR_STATE,
   background: null,
+  fontFamily: "Georgia",
+  fontColor: "#ffffff",
   setState: (state) => set(state),
   setBackground: (dataUrl) => set({ background: dataUrl }),
+  setFontFamily: (font) => set({ fontFamily: font }),
+  setFontColor: (color) => set({ fontColor: color }),
 }));
 
 let initialized = false;
@@ -34,8 +42,16 @@ export function initProjectorBridge() {
     window.obh.onBackground((dataUrl) => {
       useProjectorStore.getState().setBackground(dataUrl);
     });
+    window.obh.onFont((font) => {
+      useProjectorStore.getState().setFontFamily(font);
+    });
+    window.obh.onFontColor((color) => {
+      useProjectorStore.getState().setFontColor(color);
+    });
     window.obh.requestState();
     window.obh.requestBackground();
+    window.obh.requestFont();
+    window.obh.requestFontColor();
     return;
   }
 
@@ -53,6 +69,10 @@ export function initProjectorBridge() {
           useProjectorStore.getState().setState(msg.payload);
         } else if (msg.type === "background") {
           useProjectorStore.getState().setBackground(msg.payload);
+        } else if (msg.type === "font") {
+          useProjectorStore.getState().setFontFamily(msg.payload);
+        } else if (msg.type === "font-color") {
+          useProjectorStore.getState().setFontColor(msg.payload);
         }
       } catch {
         // Ignore malformed messages rather than crashing the display.

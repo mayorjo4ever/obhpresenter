@@ -10,7 +10,15 @@ const STEP = 2;
  * slide) or the window resizes. This is what stops long hymn verses from
  * overflowing off the projected screen.
  */
-export default function FitText({ lines }: { lines: string[] }) {
+export default function FitText({
+  lines,
+  fontFamily,
+  color,
+}: {
+  lines: string[];
+  fontFamily?: string;
+  color?: string;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [fontSize, setFontSize] = useState(MAX_FONT);
@@ -37,11 +45,17 @@ export default function FitText({ lines }: { lines: string[] }) {
     fit();
     window.addEventListener("resize", fit);
     return () => window.removeEventListener("resize", fit);
-  }, [lines]);
+    // Different fonts have different glyph widths at the same point size,
+    // so a font change has to re-run the fit — not just repaint in place.
+  }, [lines, fontFamily]);
 
   return (
     <div ref={containerRef} className="projector-fit-container">
-      <div ref={contentRef} className="projector-fit-content" style={{ fontSize }}>
+      <div
+        ref={contentRef}
+        className="projector-fit-content"
+        style={{ fontSize, fontFamily, color }}
+      >
         {lines.map((line, i) => (
           <p className="projector-line" key={i}>
             {line}

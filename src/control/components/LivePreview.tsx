@@ -8,6 +8,8 @@ interface Props {
 export default function LivePreview({ item }: Props) {
   const cursorIndex = usePresentationStore((s) => s.cursor?.index ?? -1);
   const goTo = usePresentationStore((s) => s.goTo);
+  const fontFamily = usePresentationStore((s) => s.fontFamily);
+  const fontColor = usePresentationStore((s) => s.fontColor);
 
   if (!item) {
     return (
@@ -50,7 +52,7 @@ export default function LivePreview({ item }: Props) {
           >
             <span className="slide-label">{slide.label}</span>
             {slide.lines.map((line, li) => (
-              <span className="slide-line" key={li}>
+              <span className="slide-line" style={{ fontFamily, color: fontColor }} key={li}>
                 {line}
               </span>
             ))}

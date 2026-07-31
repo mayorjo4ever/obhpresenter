@@ -9,6 +9,7 @@ import AddSongModal from "./components/AddSongModal";
 import BiblePanel from "./components/BiblePanel";
 import MediaPanel from "./components/MediaPanel";
 import BackgroundModal from "./components/BackgroundModal";
+import FontModal from "./components/FontModal";
 import AboutModal from "./components/AboutModal";
 import DisplayModal from "./components/DisplayModal";
 import VoiceCommandButton from "./components/VoiceCommandButton";
@@ -28,6 +29,7 @@ export default function ControlApp() {
   const [customSongs, setCustomSongs] = useState<Hymn[]>([]);
   const [showAddSong, setShowAddSong] = useState(false);
   const [showBackground, setShowBackground] = useState(false);
+  const [showFont, setShowFont] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [showDisplays, setShowDisplays] = useState(false);
   const [activeTab, setActiveTab] = useState<SidebarTab>("hymns");
@@ -44,6 +46,20 @@ export default function ControlApp() {
     // have to re-pick it every time the app opens.
     window.obh?.loadBackgroundImage().then((dataUrl) => {
       if (dataUrl) usePresentationStore.getState().setBackground(dataUrl);
+    });
+  }, []);
+
+  useEffect(() => {
+    // Same idea for the projector font — restore the operator's last
+    // choice instead of always resetting to Georgia.
+    window.obh?.loadFont().then((font) => {
+      if (font) usePresentationStore.getState().setFontFamily(font);
+    });
+  }, []);
+
+  useEffect(() => {
+    window.obh?.loadFontColor().then((color) => {
+      if (color) usePresentationStore.getState().setFontColor(color);
     });
   }, []);
 
@@ -148,6 +164,9 @@ export default function ControlApp() {
           <button className="btn" onClick={() => setShowBackground(true)}>
             Background
           </button>
+          <button className="btn" onClick={() => setShowFont(true)}>
+            Font
+          </button>
           <button className="btn" onClick={() => setShowDisplays(true)}>
             Displays
           </button>
@@ -220,6 +239,8 @@ export default function ControlApp() {
       {showBackground && (
         <BackgroundModal onClose={() => setShowBackground(false)} />
       )}
+
+      {showFont && <FontModal onClose={() => setShowFont(false)} />}
 
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
 

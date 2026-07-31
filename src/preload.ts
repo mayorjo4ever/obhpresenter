@@ -79,6 +79,24 @@ const bridge: ObhBridge = {
   addMedia: (): Promise<MediaLibraryState> => ipcRenderer.invoke(IPC.MEDIA_ADD),
   removeMedia: (id: string): Promise<MediaLibraryState> =>
     ipcRenderer.invoke(IPC.MEDIA_REMOVE, id),
+
+  loadFont: (): Promise<string> => ipcRenderer.invoke(IPC.FONT_LOAD),
+  sendFont: (font: string) => ipcRenderer.send(IPC.FONT_UPDATE, font),
+  onFont: (cb: (font: string) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, font: string) => cb(font);
+    ipcRenderer.on(IPC.FONT_UPDATE, listener);
+    return () => ipcRenderer.removeListener(IPC.FONT_UPDATE, listener);
+  },
+  requestFont: () => ipcRenderer.send(IPC.FONT_REQUEST),
+
+  loadFontColor: (): Promise<string> => ipcRenderer.invoke(IPC.FONT_COLOR_LOAD),
+  sendFontColor: (color: string) => ipcRenderer.send(IPC.FONT_COLOR_UPDATE, color),
+  onFontColor: (cb: (color: string) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, color: string) => cb(color);
+    ipcRenderer.on(IPC.FONT_COLOR_UPDATE, listener);
+    return () => ipcRenderer.removeListener(IPC.FONT_COLOR_UPDATE, listener);
+  },
+  requestFontColor: () => ipcRenderer.send(IPC.FONT_COLOR_REQUEST),
 };
 
 contextBridge.exposeInMainWorld("obh", bridge);

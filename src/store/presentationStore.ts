@@ -9,6 +9,12 @@ interface PresentationState {
   isBlank: boolean;
   isLive: boolean;
   background: string | null;
+  /** Projector text font — Georgia by default, but the operator can pick
+   * from a curated list of Windows-safe fonts (Tahoma, Arial, etc.). */
+  fontFamily: string;
+  /** Projector text color — white by default, adjustable for contrast
+   * against whatever background image is active. */
+  fontColor: string;
   /** When true (default), verses longer than ~16 words split into
    * sequential ~2-line screens. When false, a verse always shows as one
    * slide (auto-shrunk to fit by FitText). Applies to content loaded
@@ -28,6 +34,8 @@ interface PresentationState {
   goLive: () => void;
   stopLive: () => void;
   setBackground: (dataUrl: string | null) => void;
+  setFontFamily: (font: string) => void;
+  setFontColor: (color: string) => void;
   setSplitLongVerses: (value: boolean) => void;
 }
 
@@ -58,6 +66,8 @@ export const usePresentationStore = create<PresentationState>((set, get) => ({
   isBlank: false,
   isLive: false,
   background: null,
+  fontFamily: "Georgia",
+  fontColor: "#ffffff",
   splitLongVerses: true,
 
   setDisplayMode: (mode) => set({ displayMode: mode }),
@@ -124,6 +134,16 @@ export const usePresentationStore = create<PresentationState>((set, get) => ({
   setBackground: (dataUrl) => {
     set({ background: dataUrl });
     window.obh?.sendBackground(dataUrl);
+  },
+
+  setFontFamily: (font) => {
+    set({ fontFamily: font });
+    window.obh?.sendFont(font);
+  },
+
+  setFontColor: (color) => {
+    set({ fontColor: color });
+    window.obh?.sendFontColor(color);
   },
 
   setSplitLongVerses: (value) => set({ splitLongVerses: value }),

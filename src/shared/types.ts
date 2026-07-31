@@ -102,6 +102,32 @@ export const EMPTY_PROJECTOR_STATE: ProjectorState = {
 // Single source of truth for channel names + payload shapes so main,
 // preload, and renderers can't silently drift apart.
 
+// Curated, presentation-friendly fonts that ship with Windows by default —
+// no font files need to be bundled, since Tahoma/Arial/Verdana/etc. are
+// already on every target machine.
+export const PROJECTOR_FONTS = [
+  "Georgia",
+  "Tahoma",
+  "Arial",
+  "Verdana",
+  "Calibri",
+  "Segoe UI",
+  "Times New Roman",
+  "Trebuchet MS",
+  "Century Gothic",
+  "Franklin Gothic Medium",
+] as const;
+
+export const PROJECTOR_TEXT_COLORS = [
+  { name: "White", value: "#ffffff" },
+  { name: "Black", value: "#000000" },
+  { name: "Gold", value: "#e0bf66" },
+  { name: "Ivory", value: "#f5f0e1" },
+  { name: "Sky Blue", value: "#7ec8f5" },
+  { name: "Yellow", value: "#f5d547" },
+  { name: "Light Gray", value: "#d9d9d9" },
+] as const;
+
 export const IPC = {
   OPEN_PROJECTOR: "projector:open",
   CLOSE_PROJECTOR: "projector:close",
@@ -130,6 +156,12 @@ export const IPC = {
   MEDIA_LIST: "media:list",
   MEDIA_ADD: "media:add",
   MEDIA_REMOVE: "media:remove",
+  FONT_LOAD: "font:load",
+  FONT_UPDATE: "font:update",
+  FONT_REQUEST: "font:request",
+  FONT_COLOR_LOAD: "font-color:load",
+  FONT_COLOR_UPDATE: "font-color:update",
+  FONT_COLOR_REQUEST: "font-color:request",
 } as const;
 
 export interface ImportedFile {
@@ -225,6 +257,21 @@ export interface ObhBridge {
   listMedia: () => Promise<MediaLibraryState>;
   addMedia: () => Promise<MediaLibraryState>;
   removeMedia: (id: string) => Promise<MediaLibraryState>;
+
+  /** Projector text font — persisted, and pushed live to the projector
+   * (and any wireless viewers) the moment the operator changes it. */
+  loadFont: () => Promise<string>;
+  sendFont: (font: string) => void;
+  onFont: (cb: (font: string) => void) => () => void;
+  requestFont: () => void;
+
+  /** Projector text color — same live/persisted pattern as the font,
+   * so the operator can pick a color that stays readable against
+   * whatever background image is in use. */
+  loadFontColor: () => Promise<string>;
+  sendFontColor: (color: string) => void;
+  onFontColor: (cb: (color: string) => void) => () => void;
+  requestFontColor: () => void;
 }
 
 declare global {
