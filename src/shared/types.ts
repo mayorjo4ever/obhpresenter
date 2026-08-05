@@ -38,7 +38,7 @@ export interface BibleReference {
 
 // ---------- Presentation (derived at runtime) ----------
 
-export type SlideKind = "hymn-line" | "hymn-verse" | "bible-verse" | "blank";
+export type SlideKind = "hymn-line" | "hymn-verse" | "bible-verse" | "note" | "blank";
 
 export interface Slide {
   id: string;
@@ -55,7 +55,7 @@ export type DisplayMode = "verse" | "line";
 
 export interface PresentationItem {
   id: string;
-  type: "hymn" | "bible" | "media";
+  type: "hymn" | "bible" | "media" | "note";
   title: string;
   slides: Slide[];
   /** Only present when type === "media" — the hymn/bible slide machinery
@@ -81,6 +81,35 @@ export interface MediaItem {
 
 export interface MediaLibraryState {
   items: MediaItem[];
+}
+
+// ---------- Notes (topics, announcements, news — free-text projectable slides) ----------
+
+export interface NoteItem {
+  id: string;
+  /** Short category label shown as the projector heading — "Topic",
+   * "Announcement", "News", or anything the operator types. */
+  title: string;
+  /** The actual projected text — can be multi-line; long notes auto-split
+   * across slides the same way long hymn verses do. */
+  body: string;
+}
+
+export interface NoteLibraryState {
+  items: NoteItem[];
+}
+
+// ---------- Service log (a running record of everything shown, like
+// EasyWorship's presentation history — exportable to a text file) ----------
+
+export interface LogEntry {
+  id: string;
+  /** Epoch milliseconds. */
+  timestamp: number;
+  type: "hymn" | "bible" | "note" | "media";
+  /** Human-readable line for this entry, e.g. "Hymn 42 — Blessed
+   * Assurance", "John 3:16", "Topic: The Greatest Battle Ever Fought". */
+  title: string;
 }
 
 /** What the control window broadcasts and the projector mirrors */
@@ -162,6 +191,13 @@ export const IPC = {
   FONT_COLOR_LOAD: "font-color:load",
   FONT_COLOR_UPDATE: "font-color:update",
   FONT_COLOR_REQUEST: "font-color:request",
+  NOTE_LIST: "note:list",
+  NOTE_SAVE: "note:save",
+  NOTE_REMOVE: "note:remove",
+  LOG_LIST: "log:list",
+  LOG_APPEND: "log:append",
+  LOG_EXPORT: "log:export",
+  LOG_CLEAR: "log:clear",
 } as const;
 
 export interface ImportedFile {
@@ -272,6 +308,19 @@ export interface ObhBridge {
   sendFontColor: (color: string) => void;
   onFontColor: (cb: (color: string) => void) => () => void;
   requestFontColor: () => void;
+
+  /** Notes library — reusable Topic/Announcement/News-style text slides. */
+  listNotes: () => Promise<NoteLibraryState>;
+  saveNote: (note: { id?: string; title: string; body: string }) => Promise<NoteLibraryState>;
+  removeNote: (id: string) => Promise<NoteLibraryState>;
+
+  /** Service log — a running record of every hymn, Bible passage, note,
+   * and media item shown, like EasyWorship's presentation history.
+   * appendLog is fire-and-forget; the main process assigns the id/timestamp. */
+  listLog: () => Promise<LogEntry[]>;
+  appendLog: (entry: { type: LogEntry["type"]; title: string }) => void;
+  exportLog: () => Promise<{ saved: boolean; filePath: string | null }>;
+  clearLog: () => Promise<LogEntry[]>;
 }
 
 declare global {

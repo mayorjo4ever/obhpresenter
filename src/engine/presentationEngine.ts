@@ -5,6 +5,7 @@ import {
   Hymn,
   HymnBlock,
   MediaItem,
+  NoteItem,
   PresentationItem,
   Slide,
   SlideKind,
@@ -231,6 +232,27 @@ export function buildMediaItem(media: MediaItem, loop = true): PresentationItem 
       },
     ],
     media: { id: media.id, kind: media.kind, loop: media.kind === "video" ? loop : false },
+  };
+}
+
+export function buildNoteItem(note: NoteItem): PresentationItem {
+  const bodyLines = note.body
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+
+  const heading = note.title.trim() || bodyLines[0] || "Note";
+
+  const slides =
+    bodyLines.length > 0
+      ? buildChunkedSlides(bodyLines, heading, "note", 0, true)
+      : [{ id: nextId("slide"), kind: "note" as SlideKind, lines: [], label: heading, index: 0 }];
+
+  return {
+    id: nextId("item"),
+    type: "note",
+    title: heading,
+    slides,
   };
 }
 

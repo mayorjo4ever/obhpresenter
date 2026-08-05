@@ -579,14 +579,27 @@ button, input, select, textarea {
 
 .sidebar-tabs .tab {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
   background: transparent;
   border: none;
   color: var(--text-dim);
-  padding: 10px;
+  padding: 8px 4px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   border-bottom: 2px solid transparent;
   transition: color 120ms ease, border-color 120ms ease;
+}
+
+.tab-icon {
+  font-size: 17px;
+  line-height: 1;
+}
+
+.tab-label {
+  line-height: 1;
 }
 
 .sidebar-tabs .tab.active {
@@ -1120,4 +1133,147 @@ button, input, select, textarea {
   padding: 0;
   cursor: pointer;
   background: none;
+}
+
+/* ---------- Notes panel ---------- */
+
+.notes-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 4px 12px;
+  overflow-y: auto;
+}
+
+.note-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.note-list-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.note-list-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  text-align: left;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--ivory);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.note-list-item:hover {
+  background: var(--navy-800);
+}
+
+.note-list-title {
+  font-size: 12px;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.note-list-body {
+  font-size: 13px;
+  color: var(--ivory);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.note-list-edit {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 4px 6px;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.note-list-edit:hover {
+  color: var(--gold);
+}
+
+.note-quick-labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.btn-chip {
+  background: var(--navy-800);
+  border: 1px solid var(--border);
+  color: var(--ivory);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.btn-chip:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* ---------- Service history / log ---------- */
+
+.log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.log-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.log-time {
+  color: var(--text-dim);
+  font-size: 11px;
+  white-space: nowrap;
+  width: 130px;
+  flex-shrink: 0;
+}
+
+.log-type {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  color: #201705;
+}
+
+.log-type--hymn { background: var(--gold); }
+.log-type--bible { background: #7ec8f5; }
+.log-type--note { background: #f5d547; }
+.log-type--media { background: #d9d9d9; }
+
+.log-title {
+  color: var(--ivory);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

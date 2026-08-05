@@ -5,7 +5,9 @@ import {
   Hymn,
   IPC,
   ImportedFile,
+  LogEntry,
   MediaLibraryState,
+  NoteLibraryState,
   ObhBridge,
   ProjectorState,
   WirelessStatus,
@@ -97,6 +99,19 @@ const bridge: ObhBridge = {
     return () => ipcRenderer.removeListener(IPC.FONT_COLOR_UPDATE, listener);
   },
   requestFontColor: () => ipcRenderer.send(IPC.FONT_COLOR_REQUEST),
+
+  listNotes: (): Promise<NoteLibraryState> => ipcRenderer.invoke(IPC.NOTE_LIST),
+  saveNote: (note: { id?: string; title: string; body: string }): Promise<NoteLibraryState> =>
+    ipcRenderer.invoke(IPC.NOTE_SAVE, note),
+  removeNote: (id: string): Promise<NoteLibraryState> =>
+    ipcRenderer.invoke(IPC.NOTE_REMOVE, id),
+
+  listLog: (): Promise<LogEntry[]> => ipcRenderer.invoke(IPC.LOG_LIST),
+  appendLog: (entry: { type: LogEntry["type"]; title: string }) =>
+    ipcRenderer.send(IPC.LOG_APPEND, entry),
+  exportLog: (): Promise<{ saved: boolean; filePath: string | null }> =>
+    ipcRenderer.invoke(IPC.LOG_EXPORT),
+  clearLog: (): Promise<LogEntry[]> => ipcRenderer.invoke(IPC.LOG_CLEAR),
 };
 
 contextBridge.exposeInMainWorld("obh", bridge);

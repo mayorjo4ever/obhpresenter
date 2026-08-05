@@ -1,6 +1,6 @@
 import { create } from "zustand";
-import { DisplayMode, Hymn, MediaItem, PresentationItem, ProjectorState } from "../shared/types";
-import { buildHymnItem, buildMediaItem, PresentationCursor } from "../engine/presentationEngine";
+import { DisplayMode, Hymn, MediaItem, NoteItem, PresentationItem, ProjectorState } from "../shared/types";
+import { buildHymnItem, buildMediaItem, buildNoteItem, PresentationCursor } from "../engine/presentationEngine";
 
 interface PresentationState {
   displayMode: DisplayMode;
@@ -26,6 +26,7 @@ interface PresentationState {
   setDisplayMode: (mode: DisplayMode) => void;
   loadHymn: (hymn: Hymn) => void;
   loadMedia: (media: MediaItem, loop?: boolean) => void;
+  loadNote: (note: NoteItem) => void;
   loadItem: (item: PresentationItem) => void;
   next: () => void;
   previous: () => void;
@@ -59,6 +60,29 @@ function toProjectorState(s: {
   };
 }
 
+let lastLoggedItemId: string | null = null;
+
+function buildLogTitle(item: PresentationItem): string {
+  if (item.type === "note") {
+    const firstLine = item.slides[0]?.lines[0];
+    return firstLine ? `${item.title}: ${firstLine}` : item.title;
+  }
+  return item.title;
+}
+
+/** Logs an item the moment it's actually visible to the congregation —
+ * called both when freshly going live, and when switching items while
+ * already live (the common case: go live once at service start, then
+ * just click through hymns/verses/notes without pressing "Go Live"
+ * again each time). Skips duplicate consecutive entries for the same
+ * item either way. */
+function maybeLogItem(item: PresentationItem | null) {
+  if (item && item.id !== lastLoggedItemId) {
+    lastLoggedItemId = item.id;
+    window.obh?.appendLog({ type: item.type, title: buildLogTitle(item) });
+  }
+}
+
 export const usePresentationStore = create<PresentationState>((set, get) => ({
   displayMode: "verse",
   item: null,
@@ -81,11 +105,17 @@ export const usePresentationStore = create<PresentationState>((set, get) => ({
     get().loadItem(buildMediaItem(media, loop));
   },
 
+  loadNote: (note) => {
+    get().loadItem(buildNoteItem(note));
+  },
+
   loadItem: (item) => {
     const cursor = new PresentationCursor(item, 0);
     set({ item, cursor, isBlank: false });
-    if (get().isLive)
+    if (get().isLive) {
       broadcast(toProjectorState({ ...get(), item, cursor, isBlank: false }));
+      maybeLogItem(item);
+    }
   },
 
   next: () => {
@@ -124,6 +154,15 @@ export const usePresentationStore = create<PresentationState>((set, get) => ({
     // though the operator just pressed "Go Live".
     set({ isLive: true, isBlank: false });
     broadcast(toProjectorState({ ...get(), isLive: true, isBlank: false }));
+
+    // Log the moment something is actually shown to the congregation —
+    // not every "Go Live" click (pressing it again to un-blank the same
+    // item shouldn't create a second entry for it).
+    const item = get().item;
+    if (item && item.id !== lastLoggedItemId) {
+      lastLoggedItemId = item.id;
+      window.obh?.appendLog({ type: item.type, title: buildLogTitle(item) });
+    }
   },
 
   stopLive: () => {

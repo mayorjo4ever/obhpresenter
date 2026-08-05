@@ -8,6 +8,8 @@ import FooterToolbar from "./components/FooterToolbar";
 import AddSongModal from "./components/AddSongModal";
 import BiblePanel from "./components/BiblePanel";
 import MediaPanel from "./components/MediaPanel";
+import NotesPanel from "./components/NotesPanel";
+import HistoryModal from "./components/HistoryModal";
 import BackgroundModal from "./components/BackgroundModal";
 import FontModal from "./components/FontModal";
 import AboutModal from "./components/AboutModal";
@@ -22,7 +24,7 @@ const libraryHymns: Hymn[] = (hymnsData as { hymns: Hymn[] }).hymns.map((h) => (
   source: "library" as const,
 }));
 
-type SidebarTab = "hymns" | "bible" | "media";
+type SidebarTab = "hymns" | "bible" | "media" | "notes";
 
 export default function ControlApp() {
   const [projectorOpen, setProjectorOpen] = useState(false);
@@ -32,6 +34,7 @@ export default function ControlApp() {
   const [showFont, setShowFont] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [showDisplays, setShowDisplays] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [activeTab, setActiveTab] = useState<SidebarTab>("hymns");
   const loadHymn = usePresentationStore((s) => s.loadHymn);
   const loadItem = usePresentationStore((s) => s.loadItem);
@@ -170,6 +173,9 @@ export default function ControlApp() {
           <button className="btn" onClick={() => setShowDisplays(true)}>
             Displays
           </button>
+          <button className="btn" onClick={() => setShowHistory(true)}>
+            History
+          </button>
           <button className="btn" onClick={() => setShowAbout(true)}>
             About
           </button>
@@ -186,19 +192,29 @@ export default function ControlApp() {
               className={activeTab === "hymns" ? "tab active" : "tab"}
               onClick={() => setActiveTab("hymns")}
             >
-              Hymns
+              <span className="tab-icon" aria-hidden="true">🎵</span>
+              <span className="tab-label">Hymns</span>
             </button>
             <button
               className={activeTab === "bible" ? "tab active" : "tab"}
               onClick={() => setActiveTab("bible")}
             >
-              Bible
+              <span className="tab-icon" aria-hidden="true">📖</span>
+              <span className="tab-label">Bible</span>
             </button>
             <button
               className={activeTab === "media" ? "tab active" : "tab"}
               onClick={() => setActiveTab("media")}
             >
-              Media
+              <span className="tab-icon" aria-hidden="true">🎬</span>
+              <span className="tab-label">Media</span>
+            </button>
+            <button
+              className={activeTab === "notes" ? "tab active" : "tab"}
+              onClick={() => setActiveTab("notes")}
+            >
+              <span className="tab-icon" aria-hidden="true">📝</span>
+              <span className="tab-label">Notes</span>
             </button>
           </div>
 
@@ -220,8 +236,10 @@ export default function ControlApp() {
             </>
           ) : activeTab === "bible" ? (
             <BiblePanel />
-          ) : (
+          ) : activeTab === "media" ? (
             <MediaPanel />
+          ) : (
+            <NotesPanel />
           )}
         </aside>
 
@@ -245,6 +263,8 @@ export default function ControlApp() {
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
 
       {showDisplays && <DisplayModal onClose={() => setShowDisplays(false)} />}
+
+      {showHistory && <HistoryModal onClose={() => setShowHistory(false)} />}
     </div>
   );
 }

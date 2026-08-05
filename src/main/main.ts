@@ -26,6 +26,9 @@ import {
   IPC,
   MediaItem,
   MediaLibraryState,
+  NoteItem,
+  NoteLibraryState,
+  LogEntry,
   ProjectorState,
   WirelessStatus,
 } from "../shared/types";
@@ -419,6 +422,128 @@ ipcMain.handle(IPC.MEDIA_ADD, async () => {
 ipcMain.handle(IPC.MEDIA_REMOVE, (_event, id: string) => {
   writeMediaLibrary(readMediaLibrary().filter((m) => m.id !== id));
   return mediaLibraryState();
+});
+
+// ---------- Notes (Topic/Announcement/News-style text slides) ----------
+
+function notesLibraryPath(): string {
+  return path.join(app.getPath("userData"), "notes-library.json");
+}
+
+function readNotesLibrary(): NoteItem[] {
+  try {
+    const raw = fs.readFileSync(notesLibraryPath(), "utf-8");
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as NoteItem[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeNotesLibrary(items: NoteItem[]): void {
+  fs.writeFileSync(notesLibraryPath(), JSON.stringify(items, null, 2), "utf-8");
+}
+
+ipcMain.handle(IPC.NOTE_LIST, (): NoteLibraryState => ({ items: readNotesLibrary() }));
+
+ipcMain.handle(
+  IPC.NOTE_SAVE,
+  (_event, note: { id?: string; title: string; body: string }): NoteLibraryState => {
+    const existing = readNotesLibrary();
+    if (note.id) {
+      const updated = existing.map((n) =>
+        n.id === note.id ? { ...n, title: note.title, body: note.body } : n
+      );
+      writeNotesLibrary(updated);
+    } else {
+      writeNotesLibrary([
+        ...existing,
+        { id: crypto.randomUUID(), title: note.title, body: note.body },
+      ]);
+    }
+    return { items: readNotesLibrary() };
+  }
+);
+
+ipcMain.handle(IPC.NOTE_REMOVE, (_event, id: string): NoteLibraryState => {
+  writeNotesLibrary(readNotesLibrary().filter((n) => n.id !== id));
+  return { items: readNotesLibrary() };
+});
+
+// ---------- Service log ----------
+// A running record of everything shown — every hymn, Bible passage, note,
+// and media item the operator has gone live with — so the church has a
+// history to look back on, similar to EasyWorship's presentation log.
+// Grows as one JSON array; at typical usage (a handful of items per
+// service) this stays small for years, so no rotation/pruning is needed.
+
+function logPath(): string {
+  return path.join(app.getPath("userData"), "service-log.json");
+}
+
+function readLog(): LogEntry[] {
+  try {
+    const raw = fs.readFileSync(logPath(), "utf-8");
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as LogEntry[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeLog(entries: LogEntry[]): void {
+  fs.writeFileSync(logPath(), JSON.stringify(entries, null, 2), "utf-8");
+}
+
+ipcMain.handle(IPC.LOG_LIST, () => readLog());
+
+ipcMain.on(IPC.LOG_APPEND, (_event, entry: { type: LogEntry["type"]; title: string }) => {
+  const full: LogEntry = { id: crypto.randomUUID(), timestamp: Date.now(), ...entry };
+  writeLog([...readLog(), full]);
+});
+
+ipcMain.handle(IPC.LOG_EXPORT, async () => {
+  const result = await dialog.showSaveDialog({
+    title: "Export service log",
+    defaultPath: `service-log-${new Date().toISOString().slice(0, 10)}.txt`,
+    filters: [{ name: "Text file", extensions: ["txt"] }],
+  });
+  if (result.canceled || !result.filePath) return { saved: false, filePath: null };
+
+  const entries = readLog();
+  const byDate = new Map<string, LogEntry[]>();
+  for (const e of entries) {
+    const dateKey = new Date(e.timestamp).toLocaleDateString(undefined, {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    if (!byDate.has(dateKey)) byDate.set(dateKey, []);
+    byDate.get(dateKey)!.push(e);
+  }
+
+  const lines: string[] = [];
+  for (const [date, dayEntries] of byDate) {
+    lines.push(`=== ${date} ===`);
+    for (const e of dayEntries) {
+      const time = new Date(e.timestamp).toLocaleTimeString(undefined, {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      const typeLabel = e.type[0].toUpperCase() + e.type.slice(1);
+      lines.push(`${time} — ${typeLabel}: ${e.title}`);
+    }
+    lines.push("");
+  }
+
+  fs.writeFileSync(result.filePath, lines.join("\n"), "utf-8");
+  return { saved: true, filePath: result.filePath };
+});
+
+ipcMain.handle(IPC.LOG_CLEAR, () => {
+  writeLog([]);
+  return [];
 });
 
 // ---------- Background image gallery ----------
